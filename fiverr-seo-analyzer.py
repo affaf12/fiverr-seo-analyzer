@@ -1,13 +1,18 @@
 """
 app.py
-Streamlit Fiverr Gig SEO Analyzer (v3)
+Streamlit Fiverr Gig SEO Analyzer (v3.1)
 Author: Muhammad Affaf
 License: MIT
 """
 
 import re
 import streamlit as st
-import matplotlib.pyplot as plt
+
+# Optional import — matplotlib only if available
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 
 # -------------------------------------------------
 # HELPER FUNCTIONS
@@ -30,9 +35,7 @@ def analyze_gig(gig):
     primary_keywords = gig.get("primary_keywords", [])
     extras = gig.get("extras", {})
 
-    # -----------------------
-    # TITLE SCORE
-    # -----------------------
+    # ----------------------- TITLE SCORE -----------------------
     title_score = 0
     if 40 <= len(title) <= 80:
         title_score += 30
@@ -46,9 +49,7 @@ def analyze_gig(gig):
         title_score -= 3
     title_score = max(0, min(title_score, 50))
 
-    # -----------------------
-    # DESCRIPTION SCORE
-    # -----------------------
+    # ----------------------- DESCRIPTION SCORE -----------------------
     desc_score = 0
     word_count = len(description.split())
     density = keyword_density(description, primary_keywords)
@@ -67,9 +68,7 @@ def analyze_gig(gig):
         desc_score += 5
     desc_score = max(0, min(desc_score, 50))
 
-    # -----------------------
-    # TAG SCORE
-    # -----------------------
+    # ----------------------- TAG SCORE -----------------------
     tag_score = 0
     if len(tags) >= 3:
         tag_score += 20
@@ -79,9 +78,7 @@ def analyze_gig(gig):
         tag_score += 10
     tag_score = min(tag_score, 40)
 
-    # -----------------------
-    # FAQ / EXTRAS SCORE
-    # -----------------------
+    # ----------------------- FAQ / EXTRAS SCORE -----------------------
     faq_score = 0
     if extras.get("has_faqs"):
         faq_score += 10
@@ -99,9 +96,7 @@ def analyze_gig(gig):
         faq_score += 10
     faq_score = min(faq_score, 60)
 
-    # -----------------------
-    # SELLER STATS
-    # -----------------------
+    # ----------------------- SELLER STATS -----------------------
     seller_boost = 0
     level = extras.get("seller_level")
     if level == "level_one":
@@ -110,23 +105,18 @@ def analyze_gig(gig):
         seller_boost += 10
     elif level == "top_rated":
         seller_boost += 15
-
     if extras.get("response_time_hours", 24) <= 4:
         seller_boost += 5
 
-    # -----------------------
-    # ENGAGEMENT SIMULATION
-    # -----------------------
+    # ----------------------- ENGAGEMENT SIMULATION -----------------------
     engagement = 0
-    if "power bi" in title.lower() or "data" in description.lower():
+    if any(k in title.lower() for k in ["power bi", "data", "dashboard", "visualization"]):
         engagement += 5
     if len(description) > 250:
         engagement += 5
     engagement = min(engagement, 10)
 
-    # -----------------------
-    # FINAL SCORE (Weighted)
-    # -----------------------
+    # ----------------------- FINAL SCORE -----------------------
     weights = {
         "title": 0.25,
         "description": 0.3,
@@ -145,18 +135,16 @@ def analyze_gig(gig):
     )
     overall = round(min(overall, 100), 1)
 
-    # -----------------------
-    # RECOMMENDATIONS
-    # -----------------------
+    # ----------------------- RECOMMENDATIONS -----------------------
     recs = []
     if title_score < 40:
-        recs.append("Improve your gig title — include main keywords early.")
+        recs.append("Improve your gig title — include 1–2 keywords naturally.")
     if desc_score < 40:
-        recs.append("Add more detail to your description, include benefits & structure.")
+        recs.append("Add more detail and structure to your gig description.")
     if tag_score < 30:
         recs.append("Use 5 relevant tags closely related to your keywords.")
     if faq_score < 40:
-        recs.append("Add FAQs, media, and ensure all extras are complete.")
+        recs.append("Add FAQs, media, and ensure all gig extras are filled.")
     if overall >= 85:
         recs.append("Excellent SEO! Your gig is highly optimized for ranking.")
 
@@ -184,28 +172,22 @@ def analyze_gig(gig):
 # -------------------------------------------------
 st.set_page_config(page_title="Fiverr Gig SEO Analyzer", layout="wide")
 
-st.title("💡 Fiverr Gig SEO Analyzer (v3)")
+st.title("💡 Fiverr Gig SEO Analyzer (v3.1)")
 st.markdown(
     """
-Analyze your Fiverr gig and get a **0–100 SEO score** based on algorithmic factors like keyword usage,
-title structure, description quality, media presence, and seller performance.  
-Designed to help you **rank higher** on Fiverr search results 🚀.
+Analyze your Fiverr gig and get a **0–100 SEO score** based on title, description, tags, FAQs, and seller performance.  
+Designed to help you **rank higher** on Fiverr search results 🚀
 """
 )
 
-# --------------------------
-# Input form
-# --------------------------
+# -------------------------- FORM --------------------------
 with st.form("gig_form"):
     st.subheader("📝 Enter Your Gig Details")
 
     title = st.text_input("Gig Title", placeholder="e.g., I will design modern Power BI dashboards for business insights")
-
     description = st.text_area("Gig Description", placeholder="Write your gig description here...", height=200)
-
     tags_input = st.text_input("Tags (comma separated)", placeholder="power bi, dashboard, data visualization")
     tags = [t.strip() for t in tags_input.split(",") if t.strip()]
-
     primary_keywords_input = st.text_input("Primary Keywords (comma separated)", placeholder="power bi, dashboard")
     primary_keywords = [k.strip() for k in primary_keywords_input.split(",") if k.strip()]
 
@@ -226,9 +208,7 @@ with st.form("gig_form"):
 
     submitted = st.form_submit_button("🔍 Analyze Gig")
 
-# --------------------------
-# Run analysis
-# --------------------------
+# -------------------------- RESULTS --------------------------
 if submitted:
     gig_data = {
         "title": title,
@@ -249,31 +229,26 @@ if submitted:
     }
 
     result = analyze_gig(gig_data)
-
     st.success("✅ Analysis Completed!")
 
     # --- Metrics Dashboard ---
     st.subheader("📊 Fiverr SEO Breakdown")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Overall SEO Score", f"{result['overall_score']} / 100")
-    col2.metric("Title Score", result["components"]["Title Score"])
-    col3.metric("Description Score", result["components"]["Description Score"])
+    cols = st.columns(3)
+    metrics = list(result["components"].items())
+    for i, (name, score) in enumerate(metrics):
+        cols[i % 3].metric(name, f"{score}")
 
-    col4, col5, col6 = st.columns(3)
-    col4.metric("Tag Score", result["components"]["Tag Score"])
-    col5.metric("FAQ & Extras Score", result["components"]["FAQ & Extras Score"])
-    col6.metric("Engagement", result["components"]["Engagement"])
-
-    # --- Chart Visualization ---
-    st.markdown("### 📈 Visual SEO Component Comparison")
-    labels = list(result["components"].keys())
-    scores = list(result["components"].values())
-    fig, ax = plt.subplots()
-    ax.barh(labels, scores)
-    ax.set_xlim(0, 100)
-    ax.set_xlabel("Score")
-    ax.set_title("Fiverr SEO Component Scores")
-    st.pyplot(fig)
+    # --- Chart (optional if matplotlib available) ---
+    if plt:
+        st.markdown("### 📈 SEO Component Comparison")
+        fig, ax = plt.subplots()
+        labels = list(result["components"].keys())
+        scores = list(result["components"].values())
+        ax.barh(labels, scores)
+        ax.set_xlim(0, 100)
+        ax.set_xlabel("Score")
+        ax.set_title("Fiverr SEO Component Scores")
+        st.pyplot(fig)
 
     # --- Recommendations ---
     st.write("### 💬 Recommendations")
