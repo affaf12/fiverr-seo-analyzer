@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 function App() {
   const [url, setUrl] = useState('');
@@ -7,7 +8,6 @@ function App() {
   const [fetching, setFetching] = useState(false);
   const [result, setResult] = useState(null);
 
-  // Form state (Aapke purane Streamlit code ki tarah)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -24,7 +24,6 @@ function App() {
     completion_rate: 95
   });
 
-  // Input change handle karna
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -33,9 +32,8 @@ function App() {
     });
   };
 
-  // Fiverr URL se data fetch karna
   const handleFetchUrl = async () => {
-    if (!url) return alert("Pehle URL dalein!");
+    if (!url) return alert("Pehle Fiverr Gig ka URL dalein!");
     setFetching(true);
     try {
       const response = await fetch('/api/fetch-fiverr', {
@@ -55,23 +53,21 @@ function App() {
           has_image: data.has_image || prev.has_image,
           has_video: data.has_video || prev.has_video
         }));
-        alert("Data fetch ho gaya!");
+        alert("Data successfully fetch ho gaya!");
       } else {
         alert("Fetch error: " + (data.detail || "Unknown error"));
       }
     } catch (error) {
-      alert("URL fetch nahi ho saka.");
+      alert("URL fetch nahi ho saka. Check karein ke URL sahi hai.");
     }
     setFetching(false);
   };
 
-  // Form submit karke analyze karna
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setResult(null);
 
-    // Data ko backend format ke mutabiq tayyar karna
     const payload = {
       title: formData.title,
       description: formData.description,
@@ -90,7 +86,6 @@ function App() {
       }
     };
 
-    // Agar primary keywords khali hain toh tags use karlo
     if (payload.primary_keywords.length === 0) {
       payload.primary_keywords = payload.tags.slice(0, 2);
     }
@@ -114,7 +109,6 @@ function App() {
     setLoading(false);
   };
 
-  // JSON Report Download karne ka function
   const downloadReport = () => {
     const report = { input: formData, analysis: result };
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
@@ -125,125 +119,168 @@ function App() {
     a.click();
   };
 
+  // Chart ke liye data tayyar karna
+  const chartData = result ? Object.keys(result.components).map(key => ({
+    subject: key,
+    score: result.components[key],
+    fullMark: 30,
+  })) : [];
+
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: 'auto' }}>
-      <h1 style={{ color: '#1dbf73' }}>💡 Fiverr Gig SEO Analyzer (Pro)</h1>
+    <div style={{ padding: '20px', fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", maxWidth: '1000px', margin: 'auto', backgroundColor: '#f8fafc', minHeight: '100vh' }}>
       
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <h1 style={{ color: '#1dbf73', margin: '0' }}>💡 Fiverr Gig SEO Analyzer</h1>
+        <p style={{ color: '#64748b' }}>Apne Gig ko analyze karein aur 0-100 score haasil karein.</p>
+      </div>
+
       {/* URL Fetch Section */}
-      <div style={{ padding: '15px', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '20px' }}>
-        <label><strong>Fiverr Gig URL (Optional)</strong></label>
-        <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+      <div style={{ padding: '20px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', marginBottom: '20px' }}>
+        <label style={{ fontWeight: 'bold', color: '#334155' }}>Fiverr Gig URL (Optional)</label>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
           <input 
             type="text" 
             placeholder="https://www.fiverr.com/username/gig-title" 
             value={url} 
             onChange={(e) => setUrl(e.target.value)} 
-            style={{ flex: 1, padding: '8px' }} 
+            style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #cbd5e1', outline: 'none' }} 
           />
-          <button type="button" onClick={handleFetchUrl} disabled={fetching} style={{ padding: '8px 15px', backgroundColor: '#333', color: 'white', border: 'none', cursor: 'pointer' }}>
-            {fetching ? 'Fetching...' : '🔗 Fetch from Fiverr'}
+          <button type="button" onClick={handleFetchUrl} disabled={fetching} style={{ padding: '10px 20px', backgroundColor: '#0f172a', color: 'white', border: 'none', borderRadius: '5px', cursor: fetching ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
+            {fetching ? 'Fetching...' : '🔗 Fetch'}
           </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
         
-        {/* Main Details */}
         <div>
-          <label><strong>Gig Title:</strong></label>
-          <input type="text" name="title" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
+          <label style={{ fontWeight: 'bold', color: '#334155' }}>Gig Title:</label>
+          <input type="text" name="title" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
         </div>
 
         <div>
-          <label><strong>Gig Description:</strong></label>
-          <textarea name="description" value={formData.description} onChange={handleChange} required rows="6" style={{ width: '100%', padding: '8px', marginTop: '5px' }}></textarea>
+          <label style={{ fontWeight: 'bold', color: '#334155' }}>Gig Description:</label>
+          <textarea name="description" value={formData.description} onChange={handleChange} required rows="6" style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}></textarea>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <div style={{ flex: 1 }}>
-            <label><strong>Tags (comma separated):</strong></label>
-            <input type="text" name="tags" value={formData.tags} onChange={handleChange} required style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 300px' }}>
+            <label style={{ fontWeight: 'bold', color: '#334155' }}>Tags (comma separated):</label>
+            <input type="text" name="tags" value={formData.tags} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
           </div>
-          <div style={{ flex: 1 }}>
-            <label><strong>Primary Keywords (comma separated):</strong></label>
-            <input type="text" name="primary_keywords" value={formData.primary_keywords} onChange={handleChange} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
+          <div style={{ flex: '1 1 300px' }}>
+            <label style={{ fontWeight: 'bold', color: '#334155' }}>Primary Keywords:</label>
+            <input type="text" name="primary_keywords" value={formData.primary_keywords} onChange={handleChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
           </div>
         </div>
 
-        {/* Extras & Seller Info */}
-        <div style={{ padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
-          <h3 style={{ marginTop: 0, fontSize: '16px' }}>Extras & Seller Info</h3>
+        <div style={{ padding: '15px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
+          <h3 style={{ marginTop: 0, fontSize: '16px', color: '#334155' }}>Extras & Seller Info</h3>
           
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
-            <label><input type="checkbox" name="has_faqs" checked={formData.has_faqs} onChange={handleChange} /> Has FAQs?</label>
-            <label><input type="checkbox" name="has_packages" checked={formData.has_packages} onChange={handleChange} /> Has Packages?</label>
-            <label><input type="checkbox" name="has_delivery_info" checked={formData.has_delivery_info} onChange={handleChange} /> Has Delivery Info?</label>
-            <label><input type="checkbox" name="has_image" checked={formData.has_image} onChange={handleChange} /> Has Image?</label>
-            <label><input type="checkbox" name="has_video" checked={formData.has_video} onChange={handleChange} /> Has Video?</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><input type="checkbox" name="has_faqs" checked={formData.has_faqs} onChange={handleChange} /> Has FAQs?</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><input type="checkbox" name="has_packages" checked={formData.has_packages} onChange={handleChange} /> Has Packages?</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><input type="checkbox" name="has_delivery_info" checked={formData.has_delivery_info} onChange={handleChange} /> Has Delivery Info?</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><input type="checkbox" name="has_image" checked={formData.has_image} onChange={handleChange} /> Has Image?</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><input type="checkbox" name="has_video" checked={formData.has_video} onChange={handleChange} /> Has Video?</label>
           </div>
 
-          <div style={{ display: 'flex', gap: '15px' }}>
-            <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 200px' }}>
               <label>Seller Level:</label>
-              <select name="seller_level" value={formData.seller_level} onChange={handleChange} style={{ width: '100%', padding: '8px', marginTop: '5px' }}>
+              <select name="seller_level" value={formData.seller_level} onChange={handleChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1' }}>
                 <option value="none">None</option>
                 <option value="level_one">Level 1</option>
                 <option value="level_two">Level 2</option>
                 <option value="top_rated">Top Rated</option>
               </select>
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: '1 1 200px' }}>
               <label>Response Time (Hours):</label>
-              <input type="number" name="response_time_hours" value={formData.response_time_hours} onChange={handleChange} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
+              <input type="number" name="response_time_hours" value={formData.response_time_hours} onChange={handleChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: '1 1 200px' }}>
               <label>Completion Rate (%):</label>
-              <input type="number" name="completion_rate" value={formData.completion_rate} onChange={handleChange} style={{ width: '100%', padding: '8px', marginTop: '5px' }} />
+              <input type="number" name="completion_rate" value={formData.completion_rate} onChange={handleChange} style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} />
             </div>
           </div>
         </div>
 
-        <button type="submit" disabled={loading} style={{ padding: '12px', backgroundColor: '#1dbf73', color: 'white', fontSize: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer', borderRadius: '5px' }}>
-          {loading ? 'Analyzing...' : '🚀 Analyze Gig'}
+        <button type="submit" disabled={loading} style={{ padding: '15px', backgroundColor: '#1dbf73', color: 'white', fontSize: '18px', fontWeight: 'bold', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', borderRadius: '8px', transition: 'background 0.3s' }}>
+          {loading ? 'Analyzing...' : '🚀 Analyze Gig Now'}
         </button>
       </form>
 
-      {/* Results Section */}
       {result && (
-        <div style={{ marginTop: '30px', padding: '20px', border: '2px solid #1dbf73', borderRadius: '8px', backgroundColor: '#fff' }}>
-          <h2 style={{ marginTop: 0 }}>🎯 Summary</h2>
-          <h1 style={{ color: '#1dbf73', fontSize: '48px', margin: '10px 0' }}>{result.overall_score} / 100</h1>
-          <p><strong>Health:</strong> {result.health}</p>
-          
-          <hr style={{ borderColor: '#eee' }} />
-
-          <h3>📊 Component Scores</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-            {Object.entries(result.components).map(([key, val]) => (
-              <div key={key} style={{ padding: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '5px', textAlign: 'center' }}>
-                <div style={{ fontSize: '12px', color: '#666' }}>{key}</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1dbf73' }}>{val}</div>
-              </div>
-            ))}
+        <div style={{ marginTop: '40px', animation: 'fadeIn 0.5s' }}>
+          {/* Score Card */}
+          <div style={{ textAlign: 'center', padding: '30px', backgroundColor: '#fff', borderRadius: '10px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', borderTop: '5px solid #1dbf73' }}>
+            <h2 style={{ color: '#64748b', margin: '0 0 10px 0', fontSize: '18px' }}>Overall SEO Score</h2>
+            <div style={{ fontSize: '64px', fontWeight: '900', color: result.overall_score >= 65 ? '#1dbf73' : '#ef4444', lineHeight: '1' }}>
+              {result.overall_score}<span style={{ fontSize: '24px', color: '#94a3b8' }}>/100</span>
+            </div>
+            <p style={{ margin: '10px 0 0 0', fontSize: '18px', fontWeight: 'bold', color: result.health === 'Perfect' ? '#1dbf73' : result.health === 'Good' ? '#eab308' : '#ef4444' }}>
+              {result.health}
+            </p>
           </div>
 
-          <h3>🔧 Smart Recommendations</h3>
-          <ul style={{ backgroundColor: '#fffbeb', padding: '15px 30px', borderRadius: '5px', border: '1px solid #fde68a' }}>
-            {result.recommendations.map((rec, index) => (
-              <li key={index} style={{ marginBottom: '8px' }}>{rec}</li>
-            ))}
-          </ul>
-
-          {result.suggested_title && (
-            <div>
-              <h3>✍️ Suggested Title</h3>
-              <code style={{ display: 'block', padding: '10px', backgroundColor: '#f3f4f6', borderRadius: '5px' }}>{result.suggested_title}</code>
+          {/* Charts Section */}
+          <div style={{ display: 'flex', gap: '20px', marginTop: '20px', flexWrap: 'wrap' }}>
+            
+            {/* Radar Chart */}
+            <div style={{ flex: '1 1 400px', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+              <h3 style={{ marginTop: 0, color: '#334155' }}>📊 Radar Chart</h3>
+              <div style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 30]} />
+                    <Radar name="Score" dataKey="score" stroke="#1dbf73" fill="#1dbf73" fillOpacity={0.6} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          )}
 
-          <button onClick={downloadReport} style={{ marginTop: '20px', padding: '10px 15px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-            ⬇️ Download SEO Report (JSON)
-          </button>
+            {/* Bar Chart */}
+            <div style={{ flex: '1 1 400px', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
+              <h3 style={{ marginTop: 0, color: '#334155' }}>📈 Component Scores</h3>
+              <div style={{ height: '300px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" domain={[0, 30]} />
+                    <YAxis dataKey="subject" type="category" width={100} tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="score" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', marginTop: '20px' }}>
+            <h3 style={{ marginTop: 0, color: '#334155' }}>🔧 Smart Recommendations</h3>
+            <ul style={{ paddingLeft: '20px', lineHeight: '1.6', color: '#475569' }}>
+              {result.recommendations.map((rec, index) => (
+                <li key={index} style={{ marginBottom: '10px' }}>{rec}</li>
+              ))}
+            </ul>
+
+            {result.suggested_title && (
+              <div style={{ marginTop: '20px' }}>
+                <h4 style={{ color: '#334155', marginBottom: '5px' }}>✍️ Suggested Title</h4>
+                <div style={{ padding: '15px', backgroundColor: '#f8fafc', borderLeft: '4px solid #1dbf73', borderRadius: '4px', fontFamily: 'monospace', color: '#0f172a' }}>
+                  {result.suggested_title}
+                </div>
+              </div>
+            )}
+
+            <button onClick={downloadReport} style={{ marginTop: '20px', padding: '12px 20px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', width: '100%' }}>
+              ⬇️ Download Detailed Report (JSON)
+            </button>
+          </div>
         </div>
       )}
     </div>
